@@ -126,7 +126,6 @@
                 android:id="@+id/textViewDateOfBirthData"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="setDate"
                 android:textColor="#000000"
                 android:textSize="14sp" />
 

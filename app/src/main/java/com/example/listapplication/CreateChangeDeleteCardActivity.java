@@ -45,34 +45,28 @@ import java.util.concurrent.TimeUnit;
 
 public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
-    final String LOG_TAG = "myLogs";
+    public final static String MODE = "com.example.listapplication.MODE";
+    public final static String DB_ID = "com.example.listapplication.DB_ID";
 
-    String[] dataGender = {"М", "Ж"};
+    private final String[] dataGender = {"М", "Ж"};
 
     private String checkBoxData;
-    public String choosePosition;
+    private String choosePosition;
 
-    EditText editTextSurname, editTextFirstName, editTextPatronymic;
-    TextView textViewDateOfBirthData, textViewAgeData;
+    private EditText editTextSurname, editTextFirstName, editTextPatronymic;
+    private TextView textViewDateOfBirthData;
+    private TextView textViewAgeData;
 
-    DBHelper dbHelper;
+    private DBHelper dbHelper;
 
-    Calendar dateAndTime = Calendar.getInstance();
-
-    String myDay;
-    String myMonth;
-    String myYear;
-
-    AlertDialog.Builder alertDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_change_delete_card);
 
-        String buttonAddClick = getIntent().getStringExtra("ButtonAddClick");
-
-        String elementListID = getIntent().getStringExtra("ElementListID");
+        boolean addMode = getIntent().getBooleanExtra(MODE, false);
+        int elementListID = getIntent().getIntExtra(DB_ID, -1);
 
         CheckBox checkBox = findViewById(R.id.checkBox);
 
@@ -84,9 +78,8 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
         DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         String timeText = timeFormat.format(currentDate);
 
-        ArrayAdapter<String> adapterGender = new ArrayAdapter<String>(this,  android.R.layout.simple_spinner_item, dataGender);
+        ArrayAdapter<String> adapterGender = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, dataGender);
         adapterGender.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
         Spinner spinner = (Spinner) findViewById(R.id.spinner);
         spinner.setAdapter(adapterGender);
 
@@ -96,11 +89,10 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view,
-                                       int position, long id) {
-                String[] choose = getResources().getStringArray(R.array.dataGender);
-                choosePosition = choose[position];
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                choosePosition = dataGender[position];
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
             }
@@ -117,8 +109,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-        if (!(Boolean.valueOf(buttonAddClick))) {
-
+        if (!addMode) {
             Cursor c = db.query("mytable", null, null, null, null, null, null);
 
             if (c.moveToFirst()) {
@@ -134,7 +125,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
                 do {
 
-                    if ((c.getInt(idColIndex)) == (Integer.parseInt(elementListID))) {
+                    if (c.getInt(idColIndex) == elementListID) {
 
                         editTextSurname.setText(c.getString(surnameColIndex));
                         editTextFirstName.setText(c.getString(firstNameColIndex));
@@ -145,27 +136,14 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
                         int spinnerPosition = adapterGender.getPosition(c.getString(genderColIndex));
                         spinner.setSelection(spinnerPosition);
-
-                        if (Boolean.valueOf(c.getString(sportColIndex)) == Boolean.valueOf("true")) {
-
-                            checkBox.setChecked(true);
-                        }
-
-                        else {
-
-                            checkBox.setChecked(false);
-                        }
-
+                        checkBox.setChecked(c.getInt(sportColIndex) == 1);
                     }
-
                 } while (c.moveToNext());
-
-            } else
-                c.close();
-
+            }
+            c.close();
         }
 
-        if (Boolean.valueOf(buttonAddClick)) {
+        if (addMode) {
             buttonDelete.setVisibility(View.INVISIBLE);
         }
 
@@ -191,51 +169,42 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                     cv.put("sport", checkBoxData);
                     cv.put("createDate", (dateText + "T" + timeText));
 
-                    if (!(Boolean.valueOf(buttonAddClick))) {
-
-                        db.update("mytable", cv, "id = ?", new String[]{elementListID});
+                    if (!addMode) {
+                        db.update("mytable", cv, "id = ?", new String[]{String.valueOf(elementListID)});
                     } else {
-
                         db.insert("mytable", null, cv);
                     }
-
                     dbHelper.close();
-
-                    startActivity(new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class));
-
+                    onBackPressed();
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные сохранены", Toast.LENGTH_LONG).show();
-                }
-
-                else {
-
+                } else {
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Заполните все обязательные поля", Toast.LENGTH_LONG).show();
                 }
             }
         });
 
-        alertDialog = new AlertDialog.Builder(CreateChangeDeleteCardActivity.this);
-        alertDialog.setTitle("Удаление");
-        alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
-        alertDialog.setMessage("Вы точно хотите удалить данные?");
-        alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-
-            public void onClick(DialogInterface dialog, int id) {
-
-                db.delete("mytable", "id = " + elementListID, null);
-                dbHelper.close();
-
-                startActivity(new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class));
-
-                Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены", Toast.LENGTH_LONG).show();
-            }
-        });
-        alertDialog.setNegativeButton("Отмена", null);
-        alertDialog.create();
 
         buttonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                AlertDialog.Builder alertDialog = new AlertDialog.Builder(CreateChangeDeleteCardActivity.this);
+                alertDialog.setTitle("Удаление");
+                alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
+                alertDialog.setMessage("Вы точно хотите удалить данные?");
+                alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 
+                    public void onClick(DialogInterface dialog, int id) {
+
+                        db.delete("mytable", "id = " + elementListID, null);
+                        dbHelper.close();
+
+                        startActivity(new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class));
+
+                        Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены", Toast.LENGTH_LONG).show();
+                    }
+                });
+                alertDialog.setNegativeButton("Отмена", null);
+                alertDialog.create();
                 alertDialog.show();
             }
         });
@@ -243,60 +212,33 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
         buttonBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                /* if (!(Boolean.valueOf(buttonAddClick))) {
-
-                    startActivity(new Intent(CreateChangeDeleteCardActivity.this, CardActivity.class));
-                }
-
-                else {
-                 */
-                    startActivity(new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class));
-                // }
+                onBackPressed();
+            }
+        });
+        textViewDateOfBirthData.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar dateAndTime = Calendar.getInstance();
+                new DatePickerDialog(CreateChangeDeleteCardActivity.this, new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                        dateAndTime.set(Calendar.YEAR, year);
+                        dateAndTime.set(Calendar.MONTH, month);
+                        dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                        DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                        String date = dateFormat.format(dateAndTime.getTime());
+                        textViewDateOfBirthData.setText(date);
+                        ageCalculation(dateAndTime.getTime());
+                    }
+                },
+                        dateAndTime.get(Calendar.YEAR),
+                        dateAndTime.get(Calendar.MONTH),
+                        dateAndTime.get(Calendar.DAY_OF_MONTH))
+                        .show();
             }
         });
 
     }
-
-    public void setDate(View v) {
-
-        new DatePickerDialog(CreateChangeDeleteCardActivity.this, setDate,
-                dateAndTime.get(Calendar.YEAR),
-                dateAndTime.get(Calendar.MONTH),
-                dateAndTime.get(Calendar.DAY_OF_MONTH))
-                .show();
-    }
-
-    private void setInitialDateTime() {
-
-        textViewDateOfBirthData.setText(myDay + "." + myMonth + "." + myYear);
-    }
-
-    DatePickerDialog.OnDateSetListener setDate = new DatePickerDialog.OnDateSetListener() {
-
-        public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-
-            dateAndTime.set(Calendar.YEAR, year);
-            myYear = String.valueOf(dateAndTime.get(Calendar.YEAR));
-
-            dateAndTime.set(Calendar.MONTH, monthOfYear);
-            myMonth = String.valueOf(dateAndTime.get(Calendar.MONTH) + 1);
-
-            if (myMonth.length() == 1) {
-                myMonth = "0" + myMonth;
-            }
-
-            dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            myDay = String.valueOf(dateAndTime.get(Calendar.DAY_OF_MONTH));
-
-            if (myDay.length() == 1) {
-                myDay = "0" + myDay;
-            }
-
-            setInitialDateTime();
-            ageCalculation(textViewDateOfBirthData.getText().toString());
-        }
-    };
 
     public void onCheckboxClicked(View view) {
 
@@ -305,31 +247,16 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
         if (checkBox.isChecked()) {
 
             checkBoxData = "true";
-        }
-        else {
+        } else {
 
             checkBoxData = "false";
         }
     }
-    
-    public void ageCalculation (String dateOfBirth) {
 
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy");
-
-            Log.d(LOG_TAG, "dateOfBirth " + dateOfBirth);
-
-            Date date = simpleDateFormat.parse(dateOfBirth);
-
-            long ageMil = new Date().getTime() - date.getTime();
-
-            long age = ((TimeUnit.DAYS.convert(ageMil, TimeUnit.MILLISECONDS)) / 365L);
-
-            textViewAgeData.setText(String.valueOf(age));
-
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+    public void ageCalculation(Date dateOfBirth) {
+        long ageMil = new Date().getTime() - dateOfBirth.getTime();
+        long age = ((TimeUnit.DAYS.convert(ageMil, TimeUnit.MILLISECONDS)) / 365L);
+        textViewAgeData.setText(String.valueOf(age));
     }
 
 }
