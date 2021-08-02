@@ -1,46 +1,41 @@
 package com.example.listapplication;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.DialogFragment;
+import androidx.core.content.FileProvider;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
-import android.app.Dialog;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
-import android.text.format.DateUtils;
-import android.util.Log;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 public class CreateChangeDeleteCardActivity extends AppCompatActivity {
@@ -48,9 +43,11 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
     public final static String MODE = "com.example.listapplication.MODE";
     public final static String DB_ID = "com.example.listapplication.DB_ID";
 
+    private final static int REQUEST_IMAGE_CAPTURE = 1;
+
     private final String[] dataGender = {"М", "Ж"};
 
-    private String checkBoxData;
+    private int checkBoxData;
     private String choosePosition;
 
     private EditText editTextSurname, editTextFirstName, editTextPatronymic;
@@ -58,7 +55,9 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
     private TextView textViewAgeData;
 
     private DBHelper dbHelper;
+    private ImageView imageView;
 
+    private AlertDialog.Builder alertDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +79,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         ArrayAdapter<String> adapterGender = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, dataGender);
         adapterGender.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
         Spinner spinner = (Spinner) findViewById(R.id.spinner);
         spinner.setAdapter(adapterGender);
 
@@ -87,9 +87,13 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
         ImageView buttonDelete = findViewById(R.id.buttonDelete);
         ImageView buttonBack = findViewById(R.id.buttonBack);
 
+        imageView = findViewById(R.id.image_view);
+
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+
                 choosePosition = dataGender[position];
             }
 
@@ -110,6 +114,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         if (!addMode) {
+
             Cursor c = db.query("mytable", null, null, null, null, null, null);
 
             if (c.moveToFirst()) {
@@ -122,6 +127,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                 int genderColIndex = c.getColumnIndex("gender");
                 int ageColIndex = c.getColumnIndex("age");
                 int sportColIndex = c.getColumnIndex("sport");
+                int photoPathColIndex = c.getColumnIndex("photoPath");
 
                 do {
 
@@ -134,18 +140,64 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                         textViewDateOfBirthData.setText(c.getString(dateOfBirthColIndex));
                         textViewAgeData.setText(c.getString(ageColIndex));
 
+                        Bitmap imageBitmap = BitmapFactory.decodeFile(c.getString(photoPathColIndex));
+                        imageView.setImageBitmap(imageBitmap);
+
                         int spinnerPosition = adapterGender.getPosition(c.getString(genderColIndex));
                         spinner.setSelection(spinnerPosition);
-                        checkBox.setChecked(c.getInt(sportColIndex) == 1);
+
+                        if (Boolean.valueOf(c.getString(sportColIndex)) == true) {
+
+                            checkBox.setChecked(true);
+                        } else {
+
+                            checkBox.setChecked(false);
+                        }
+
                     }
+
                 } while (c.moveToNext());
-            }
-            c.close();
+
+            } else
+                c.close();
+
         }
 
         if (addMode) {
-            buttonDelete.setVisibility(View.INVISIBLE);
+
+            LinearLayout.LayoutParams param = new LinearLayout.LayoutParams(125, 110);
+            param.setMargins(350, 0, 0, 0);
+
+            buttonSave.setLayoutParams(param);
+            buttonDelete.setVisibility(View.GONE);
         }
+
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+
+                    File photoFile = null;
+                    try {
+                        photoFile = createImageFile();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    if (photoFile != null) {
+                        Uri photoURI = FileProvider.getUriForFile(CreateChangeDeleteCardActivity.this,
+                                "com.example.listapplication.fileprovider",
+                                photoFile);
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                        startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                    }
+
+                }
+            }
+        });
 
         buttonSave.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -168,26 +220,35 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                     cv.put("age", age);
                     cv.put("sport", checkBoxData);
                     cv.put("createDate", (dateText + "T" + timeText));
+                    cv.put("photoPath", currentPhotoPath);
 
                     if (!addMode) {
+
                         db.update("mytable", cv, "id = ?", new String[]{String.valueOf(elementListID)});
                     } else {
+
                         db.insert("mytable", null, cv);
                     }
+                    Person person = new Person(elementListID, surname + firstName + patronymic, choosePosition, dateOfBirth);
                     dbHelper.close();
-                    onBackPressed();
+                    Intent i = new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class);
+                    i.putExtra(DB_ID, person);
+                    setResult(Activity.RESULT_OK, i);
+                    finish();
+
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные сохранены", Toast.LENGTH_LONG).show();
                 } else {
+
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Заполните все обязательные поля", Toast.LENGTH_LONG).show();
                 }
             }
         });
 
-
         buttonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AlertDialog.Builder alertDialog = new AlertDialog.Builder(CreateChangeDeleteCardActivity.this);
+
+                alertDialog = new AlertDialog.Builder(CreateChangeDeleteCardActivity.this);
                 alertDialog.setTitle("Удаление");
                 alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
                 alertDialog.setMessage("Вы точно хотите удалить данные?");
@@ -198,7 +259,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                         db.delete("mytable", "id = " + elementListID, null);
                         dbHelper.close();
 
-                        startActivity(new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class));
+                        onBackPressed();
 
                         Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены", Toast.LENGTH_LONG).show();
                     }
@@ -215,6 +276,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                 onBackPressed();
             }
         });
+
         textViewDateOfBirthData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -240,23 +302,51 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+
+            Bitmap imageBitmap = BitmapFactory.decodeFile(currentPhotoPath);
+            imageView.setImageBitmap(imageBitmap);
+
+        }
+    }
+
+    String currentPhotoPath;
+
+    private File createImageFile() throws IOException {
+
+        String timeStamp = String.valueOf(System.currentTimeMillis());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,
+                ".jpg",
+                storageDir
+        );
+
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
     public void onCheckboxClicked(View view) {
 
         CheckBox checkBox = (CheckBox) view;
 
         if (checkBox.isChecked()) {
 
-            checkBoxData = "true";
+            checkBoxData = 1;
         } else {
 
-            checkBoxData = "false";
+            checkBoxData = 0;
         }
     }
 
     public void ageCalculation(Date dateOfBirth) {
+
         long ageMil = new Date().getTime() - dateOfBirth.getTime();
         long age = ((TimeUnit.DAYS.convert(ageMil, TimeUnit.MILLISECONDS)) / 365L);
         textViewAgeData.setText(String.valueOf(age));
     }
-
 }

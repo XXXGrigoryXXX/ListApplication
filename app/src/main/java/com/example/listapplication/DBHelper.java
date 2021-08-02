@@ -3,7 +3,6 @@ package com.example.listapplication;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 public class DBHelper extends SQLiteOpenHelper {
     public DBHelper(Context context) {
@@ -22,7 +21,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 + "gender text,"
                 + "age integer,"
                 + "sport text,"
-                + "createDate text"+ ");");
+                + "createDate text,"
+                + "photoPath text"+ ");");
     }
 
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {

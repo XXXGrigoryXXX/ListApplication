@@ -1,11 +1,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
     <include layout="@layout/toolbar_create_change_delete_card"/>
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="10dp">
@@ -28,53 +29,76 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/textViewSurname"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:text="Фамилия"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/textViewSurnameRequiredField"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="251dp"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textViewSurname"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:text="Фамилия"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/textViewSurnameRequiredField"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="*"
+                            android:textColor="#B30101" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/editTextSurname"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textViewFirstName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Имя" />
+
+                        <TextView
+                            android:id="@+id/textViewFirstNameRequiredField"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="*"
+                            android:textColor="#B30101" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/editTextFirstName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/image_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="105dp"
+                    android:layout_margin="5dp"
                     android:layout_weight="1"
-                    android:text="*"
-                    android:textColor="#B30101" />
+                    android:background="@drawable/back"
+                    android:padding="1dp" />
+
             </LinearLayout>
-
-            <EditText
-                android:id="@+id/editTextSurname"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="14sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/textViewFirstName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Имя" />
-
-                <TextView
-                    android:id="@+id/textViewFirstNameRequiredField"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="*"
-                    android:textColor="#B30101" />
-            </LinearLayout>
-
-            <EditText
-                android:id="@+id/editTextFirstName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="14sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
