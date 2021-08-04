@@ -1,18 +1,24 @@
 package com.example.listapplication;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 
 import java.util.ArrayList;
@@ -102,14 +108,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 25 && resultCode == Activity.RESULT_OK) {
-            if (data == null) {
-                Toast.makeText(this, "Problem", Toast.LENGTH_SHORT).show();
-            } else {
-                Person person = data.getParcelableExtra(DB_ID);
-                Toast.makeText(this, person.getName(), Toast.LENGTH_SHORT).show();
-            }
+        if (resultCode == Activity.RESULT_OK) {
+
+            Person person = data.getParcelableExtra(DB_ID);
         }
+    }
+
+    @Override
+    public void onRestart() {
+        super.onRestart();
+        this.recreate();
     }
 }
 

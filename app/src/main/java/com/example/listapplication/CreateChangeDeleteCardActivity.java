@@ -1,5 +1,6 @@
 package com.example.listapplication;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
@@ -17,6 +18,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -24,7 +27,6 @@ import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,37 +57,45 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
     private TextView textViewAgeData;
 
     private DBHelper dbHelper;
+    private SQLiteDatabase db;
+
     private ImageView imageView;
 
     private AlertDialog.Builder alertDialog;
+
+    private String dateText;
+    private String timeText;
+
+    private int elementListID;
+    private boolean addMode;
+
+    private String currentPhotoPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_change_delete_card);
 
-        boolean addMode = getIntent().getBooleanExtra(MODE, false);
-        int elementListID = getIntent().getIntExtra(DB_ID, -1);
+        addMode = getIntent().getBooleanExtra(MODE, false);
+        elementListID = getIntent().getIntExtra(DB_ID, -1);
 
-        CheckBox checkBox = findViewById(R.id.checkBox);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        CheckBox checkBoxSport = findViewById(R.id.checkBoxSport);
 
         Date currentDate = new Date();
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String dateText = dateFormat.format(currentDate);
+        dateText = dateFormat.format(currentDate);
 
         DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-        String timeText = timeFormat.format(currentDate);
+        timeText = timeFormat.format(currentDate);
 
         ArrayAdapter<String> adapterGender = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, dataGender);
         adapterGender.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         Spinner spinner = (Spinner) findViewById(R.id.spinner);
         spinner.setAdapter(adapterGender);
-
-        ImageView buttonSave = findViewById(R.id.buttonSave);
-        ImageView buttonDelete = findViewById(R.id.buttonDelete);
-        ImageView buttonBack = findViewById(R.id.buttonBack);
 
         imageView = findViewById(R.id.image_view);
 
@@ -111,7 +121,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         dbHelper = new DBHelper(this);
 
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db = dbHelper.getWritableDatabase();
 
         if (!addMode) {
 
@@ -146,12 +156,12 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                         int spinnerPosition = adapterGender.getPosition(c.getString(genderColIndex));
                         spinner.setSelection(spinnerPosition);
 
-                        if (Boolean.valueOf(c.getString(sportColIndex)) == true) {
+                        if (c.getInt(sportColIndex) == 1) {
 
-                            checkBox.setChecked(true);
+                            checkBoxSport.setChecked(true);
                         } else {
 
-                            checkBox.setChecked(false);
+                            checkBoxSport.setChecked(false);
                         }
 
                     }
@@ -161,15 +171,6 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
             } else
                 c.close();
 
-        }
-
-        if (addMode) {
-
-            LinearLayout.LayoutParams param = new LinearLayout.LayoutParams(125, 110);
-            param.setMargins(350, 0, 0, 0);
-
-            buttonSave.setLayoutParams(param);
-            buttonDelete.setVisibility(View.GONE);
         }
 
         imageView.setOnClickListener(new View.OnClickListener() {
@@ -199,10 +200,70 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
             }
         });
 
-        buttonSave.setOnClickListener(new View.OnClickListener() {
+        textViewDateOfBirthData.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar dateAndTime = Calendar.getInstance();
+                new DatePickerDialog(CreateChangeDeleteCardActivity.this, new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                        dateAndTime.set(Calendar.YEAR, year);
+                        dateAndTime.set(Calendar.MONTH, month);
+                        dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                        DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                        String date = dateFormat.format(dateAndTime.getTime());
+                        textViewDateOfBirthData.setText(date);
+                        ageCalculation(dateAndTime.getTime());
+                    }
+                },
+                        dateAndTime.get(Calendar.YEAR),
+                        dateAndTime.get(Calendar.MONTH),
+                        dateAndTime.get(Calendar.DAY_OF_MONTH))
+                        .show();
+            }
+        });
+
+        checkBoxSport.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                CheckBox checkBox = (CheckBox) v;
+
+                if (checkBox.isChecked()) {
+
+                    checkBoxData = 1;
+                } else {
+
+                    checkBoxData = 0;
+                }
+            }
+        });
+
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.create_and_delete, menu);
+
+        if (addMode) {
+            MenuItem item = menu.findItem(R.id.buttonDelete);
+            item.setVisible(false);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        switch (item.getItemId()) {
+
+            case android.R.id.home:
+                onBackPressed();
+                break;
+
+            case R.id.buttonSave:
                 ContentValues cv = new ContentValues();
 
                 String surname = editTextSurname.getText().toString();
@@ -241,13 +302,9 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Заполните все обязательные поля", Toast.LENGTH_LONG).show();
                 }
-            }
-        });
+                break;
 
-        buttonDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
+            case R.id.buttonDelete:
                 alertDialog = new AlertDialog.Builder(CreateChangeDeleteCardActivity.this);
                 alertDialog.setTitle("Удаление");
                 alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
@@ -267,39 +324,10 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                 alertDialog.setNegativeButton("Отмена", null);
                 alertDialog.create();
                 alertDialog.show();
-            }
-        });
+                break;
+        }
 
-        buttonBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onBackPressed();
-            }
-        });
-
-        textViewDateOfBirthData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar dateAndTime = Calendar.getInstance();
-                new DatePickerDialog(CreateChangeDeleteCardActivity.this, new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        dateAndTime.set(Calendar.YEAR, year);
-                        dateAndTime.set(Calendar.MONTH, month);
-                        dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                        DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                        String date = dateFormat.format(dateAndTime.getTime());
-                        textViewDateOfBirthData.setText(date);
-                        ageCalculation(dateAndTime.getTime());
-                    }
-                },
-                        dateAndTime.get(Calendar.YEAR),
-                        dateAndTime.get(Calendar.MONTH),
-                        dateAndTime.get(Calendar.DAY_OF_MONTH))
-                        .show();
-            }
-        });
-
+        return true;
     }
 
     @Override
@@ -312,8 +340,6 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         }
     }
-
-    String currentPhotoPath;
 
     private File createImageFile() throws IOException {
 
@@ -328,19 +354,6 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
         currentPhotoPath = image.getAbsolutePath();
         return image;
-    }
-
-    public void onCheckboxClicked(View view) {
-
-        CheckBox checkBox = (CheckBox) view;
-
-        if (checkBox.isChecked()) {
-
-            checkBoxData = 1;
-        } else {
-
-            checkBoxData = 0;
-        }
     }
 
     public void ageCalculation(Date dateOfBirth) {
