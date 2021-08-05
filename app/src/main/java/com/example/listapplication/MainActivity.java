@@ -1,24 +1,19 @@
 package com.example.listapplication;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.app.ActionBar;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
-import android.widget.Toolbar;
+
 
 
 import java.util.ArrayList;
@@ -30,6 +25,8 @@ import static com.example.listapplication.CreateChangeDeleteCardActivity.MODE;
 
 public class MainActivity extends AppCompatActivity {
 
+    final String LOG_TAG = "myLogs";
+
     private static final int REQUEST_DATA_FROM_DATABASE = 1;
 
     private RecyclerView recyclerView;
@@ -39,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Person> arrayList = new ArrayList<>();
 
     private Button buttonAdd;
+
+    private int positionRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,26 +80,24 @@ public class MainActivity extends AppCompatActivity {
                 Person person = new Person(id, name, gender, date);
                 arrayList.add(person);
             } while (c.moveToNext());
-        } else
-            c.close();
+        }
+        c.close();
 
         dbHelper.close();
 
+        buttonAdd.setOnClickListener(v -> {
 
-        buttonAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                Intent intent = new Intent(MainActivity.this, CreateChangeDeleteCardActivity.class);
-                intent.putExtra(MODE, true);
-                startActivity(intent);
-            }
+            Intent intent = new Intent(MainActivity.this, CreateChangeDeleteCardActivity.class);
+            intent.putExtra(MODE, true);
+            startActivityForResult(intent, REQUEST_DATA_FROM_DATABASE);
         });
 
-        adapter = new PersonAdapter(arrayList, dbId -> {
+        adapter = new PersonAdapter(arrayList, (dbId, position) -> {
+
+            positionRecyclerView = position;
             Intent intent = new Intent(MainActivity.this, CreateChangeDeleteCardActivity.class);
             intent.putExtra(DB_ID, dbId);
-            startActivityForResult(intent, 25);
+            startActivityForResult(intent, REQUEST_DATA_FROM_DATABASE);
         });
         recyclerView.setAdapter(adapter);
     }
@@ -108,18 +105,35 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == Activity.RESULT_OK) {
+        if (requestCode == REQUEST_DATA_FROM_DATABASE && resultCode == Activity.RESULT_OK) {
 
             Person person = data.getParcelableExtra(DB_ID);
-        }
-    }
 
-    @Override
-    public void onRestart() {
-        super.onRestart();
-        this.recreate();
+            int statusAction = data.getIntExtra("statusAction", -1);
+
+            Log.d(LOG_TAG, "position " + positionRecyclerView);
+
+            switch (statusAction) {
+                case 1:
+                    arrayList.set(positionRecyclerView, person);
+                    adapter.notifyItemChanged(positionRecyclerView);
+                    break;
+                case 2:
+                    arrayList.remove(positionRecyclerView);
+                    adapter.notifyItemRemoved(positionRecyclerView);
+                    break;
+                default:
+                    positionRecyclerView = 0;
+                    arrayList.add(positionRecyclerView, person);
+                    adapter.notifyItemInserted(positionRecyclerView);
+                    break;
+
+            }
+        }
+
     }
 }
+
 
 
 

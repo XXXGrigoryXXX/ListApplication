@@ -13,7 +13,6 @@ com/example/listapplication/DBHelper.java
  com.example.listapplication.DBHelper
 com/example/listapplication/MainActivity.java
  com.example.listapplication.MainActivity
- com.example.listapplication.MainActivity$1
 com/example/listapplication/BuildConfig.java
  com.example.listapplication.BuildConfig
 com/example/listapplication/PersonAdapter.java

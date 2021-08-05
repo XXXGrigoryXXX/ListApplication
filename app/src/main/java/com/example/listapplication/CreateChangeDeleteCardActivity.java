@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,6 +42,8 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class CreateChangeDeleteCardActivity extends AppCompatActivity {
+
+    final String LOG_TAG = "myLogs";
 
     public final static String MODE = "com.example.listapplication.MODE";
     public final static String DB_ID = "com.example.listapplication.DB_ID";
@@ -70,6 +73,8 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
     private boolean addMode;
 
     private String currentPhotoPath;
+
+    private int statusAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,6 +148,8 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
                     if (c.getInt(idColIndex) == elementListID) {
 
+                        Log.d(LOG_TAG, "elementListID " + elementListID);
+
                         editTextSurname.setText(c.getString(surnameColIndex));
                         editTextFirstName.setText(c.getString(firstNameColIndex));
                         editTextPatronymic.setText(c.getString(patronymicColIndex));
@@ -168,8 +175,8 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
 
                 } while (c.moveToNext());
 
-            } else
-                c.close();
+            }
+            c.close();
 
         }
 
@@ -286,15 +293,19 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                     if (!addMode) {
 
                         db.update("mytable", cv, "id = ?", new String[]{String.valueOf(elementListID)});
+                        statusAction = 1;
                     } else {
 
-                        db.insert("mytable", null, cv);
+                        elementListID = (int) (db.insert("mytable", null, cv));
                     }
-                    Person person = new Person(elementListID, surname + firstName + patronymic, choosePosition, dateOfBirth);
+
+                    Person person = new Person(elementListID, surname + " " + firstName + " " + patronymic, choosePosition, dateOfBirth);
                     dbHelper.close();
-                    Intent i = new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class);
-                    i.putExtra(DB_ID, person);
-                    setResult(Activity.RESULT_OK, i);
+
+                    Intent data = new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class);
+                    data.putExtra(DB_ID, person);
+                    data.putExtra("statusAction", statusAction);
+                    setResult(Activity.RESULT_OK, data);
                     finish();
 
                     Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные сохранены", Toast.LENGTH_LONG).show();
@@ -316,7 +327,12 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                         db.delete("mytable", "id = " + elementListID, null);
                         dbHelper.close();
 
-                        onBackPressed();
+                        statusAction = 2;
+
+                        Intent data = new Intent(CreateChangeDeleteCardActivity.this, MainActivity.class);
+                        data.putExtra("statusAction", statusAction);
+                        setResult(Activity.RESULT_OK, data);
+                        finish();
 
                         Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены", Toast.LENGTH_LONG).show();
                     }
