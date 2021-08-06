@@ -335,6 +335,7 @@ public class CreateChangeDeleteCardActivity extends AppCompatActivity {
                         finish();
 
                         Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены", Toast.LENGTH_LONG).show();
+                        Toast.makeText(CreateChangeDeleteCardActivity.this, "Данные удалены, прям точно удалены", Toast.LENGTH_LONG).show();
                     }
                 });
                 alertDialog.setNegativeButton("Отмена", null);
